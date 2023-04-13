@@ -1,7 +1,10 @@
 import { Component } from 'react';
 import { GlobalStyle } from './components/GlobalStyle';
 import axios from 'axios';
-import Select from 'react-select';
+
+import { fetchBreeds, fetchDogByBreed } from 'api';
+import { Dog } from './components/Dog';
+import { BreedSelect } from 'components/BreedSelect';
 axios.defaults.baseURL = 'https://api.thedogapi.com/v1';
 axios.defaults.headers.common['x-api-key'] = process.env.REACT_APP_API_KEY;
 
@@ -9,23 +12,16 @@ export default class App extends Component {
   state = {
     breeds: [],
     dog: null,
+    error: null,
   };
 
-  async componentDidMount() {
+  selectBreed = async breedId => {
     try {
-      const response = await axios.get('/breeds');
-      this.setState({ breeds: response.data });
-    } catch (error) {}
-  }
-
-  selectBreed = async option => {
-    console.log(option);
-    try {
-      const response = await axios.get('/images/search', {
-        params: { breed_id: option.value },
-      });
-      this.setState({ dog: response.data[0] });
-    } catch (error) {}
+      const dog = await fetchDogByBreed(breedId);
+      this.setState({ dog });
+    } catch (error) {
+      this.setState({ error: 'Ошибка загрузки Попробуй еще раз!' });
+    }
   };
 
   buildSelectOptions = () => {
@@ -36,13 +32,13 @@ export default class App extends Component {
   };
 
   render() {
+    const { breeds, dog, error } = this.state;
     const options = this.buildSelectOptions();
     return (
       <div>
-        <Select options={options} onChange={this.selectBreed} />
-        {this.state.dog && (
-          <img src={this.state.dog.url} width="480" alt="dog" />
-        )}
+        <BreedSelect breeds={breeds} onSelect={this.selectBreed} />
+        {error && <div> {error} </div>}
+        {dog && <Dog dog={dog} />}
         <GlobalStyle />
       </div>
     );
